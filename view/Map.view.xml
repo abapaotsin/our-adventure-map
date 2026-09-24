@@ -1,0 +1,20 @@
+<mvc:View controllerName="ouradventuremap.map.controller.Map" xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core" xmlns:layout="sap.ui.layout" xmlns="sap.m">
+  <Page id="mapPage" title="Our Adventure Map" showHeader="true" enableScrolling="false">
+    <content>
+      <core:HTML id="mapContainer" 
+                 content="&lt;div id=&quot;leafletMap&quot; style=&quot;width:100%;height:calc(100vh - 100px);&quot;&gt;&lt;/div&gt;" />
+    </content>
+    <footer>
+      <Bar id="mapFooterBar">
+        <contentLeft>
+          <Button id="musicToggleBtn" icon="sap-icon://media-play" tooltip="Play/Pause Music" press="onToggleMusic" />
+          <Button id="playlistBtn" icon="sap-icon://list" tooltip="Choose Song" press="onOpenPlaylist" />
+        </contentLeft>
+        <contentRight>
+          <Button id="addAdventureBtn" text="+ Add New Memory" type="Emphasized" press="onAddAdventurePress" />
+        </contentRight>
+      </Bar>
+    </footer>
+  </Page>
+</mvc:View>

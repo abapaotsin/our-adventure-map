@@ -1,0 +1,2 @@
+sap.ui.define(["ouradventuremap/map/controller/Map.controller"],function(t){"use strict";QUnit.module("Map Controller");QUnit.test("I should test the Map controller",function(n){var o=new t;o.onInit();n.ok(o)})});
+//# sourceMappingURL=Map.controller.js.map

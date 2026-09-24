@@ -1,0 +1,84 @@
+{
+	"_version": "1.60.0",
+	"sap.app": {
+		"id": "ouradventuremap.map",
+		"i18n": {
+			"bundleUrl": "i18n/i18n.properties",
+			"supportedLocales": [
+				""
+			]
+		}
+	},
+	"sap.ui": {
+		"technology": "UI5",
+		"icons": {
+			"icon": "",
+			"favIcon": "",
+			"phone": "",
+			"phone@2": "",
+			"tablet": "",
+			"tablet@2": ""
+		},
+		"deviceTypes": {
+			"desktop": true,
+			"tablet": true,
+			"phone": true
+		}
+	},
+	"sap.ui5": {
+		"flexEnabled": true,
+		"dependencies": {
+			"minUI5Version": "1.120.23",
+			"libs": {
+				"sap.m": {},
+				"sap.ui.core": {}
+			}
+		},
+		"contentDensities": {
+			"compact": true,
+			"cozy": true
+		},
+		"resources": {
+			"css": [
+				{
+					"uri": "css/style.css"
+				}
+			]
+		},
+		"routing": {
+			"config": {
+				"routerClass": "sap.m.routing.Router",
+				"controlAggregation": "pages",
+				"controlId": "app",
+				"transition": "slide",
+				"type": "View",
+				"viewType": "XML",
+				"path": "ouradventuremap.map.view",
+				"async": true,
+				"viewPath": "ouradventuremap.map.view"
+			},
+			"routes": [
+				{
+					"name": "RouteMap",
+					"pattern": ":?query:",
+					"target": [
+						"TargetMap"
+					]
+				}
+			],
+			"targets": {
+				"TargetMap": {
+					"id": "Map",
+					"name": "Map"
+				}
+			}
+		},
+		"rootView": {
+			"viewName": "ouradventuremap.map.view.App",
+			"type": "XML",
+			"id": "App",
+			"async": true
+		},
+		"flexBundle": false
+	}
+}

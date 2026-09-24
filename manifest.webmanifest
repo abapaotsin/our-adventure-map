@@ -1,0 +1,22 @@
+{
+  "name": "Our Adventure Map",
+  "short_name": "Our Map",
+  "description": "A private map of our memories together",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF69B4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "media/world192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "media/world512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
