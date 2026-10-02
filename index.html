@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Our Adventure Map</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#FF69B4">
+    <link rel="icon" type="image/png" href="media/world192.png">
+    <link rel="apple-touch-icon" href="media/world192.png">
+    <style>
+        html, body, body > div, #container, #container-uiarea {
+            height: 100%;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script
+        id="sap-ui-bootstrap"
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-resource-roots='{
+            "ouradventuremap.map": "./"
+        }'
+        data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
+        data-sap-ui-compat-version="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-frame-options="trusted"
+    ></script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content">
+    <div id="revealOverlay" style="
+        position: fixed; inset: 0; z-index: 9999;
+        background: linear-gradient(135deg, #FF69B4, #7360F2);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; color: white; font-family: 'Poppins', sans-serif; padding: 20px;
+        cursor: pointer; overflow: hidden;
+        animation: heartbeat 2.5s ease-in-out infinite;
+    ">
+        <div style="font-family: 'Caveat', cursive; font-size: 3em; margin-bottom: 20px;">
+            Something is coming...
+        </div>
+        <div id="revealCountdown" style="font-size: 1.3em; opacity: 0.9;"></div>
+        <div id="tapMessage" style="font-size: 1.1em; opacity: 0.95; margin-top: 15px; min-height: 1.5em;"></div>
+        <div id="tapHint" style="font-size: 1em; opacity: 0.7; margin-top: 30px; animation: pulse 1.5s infinite;">
+            Tap anywhere ✨
+        </div>
+    </div>
+
+    <style>
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        10% { transform: scale(1.03); }
+        20% { transform: scale(1); }
+        30% { transform: scale(1.03); }
+        40% { transform: scale(1); }
+      }
+
+      .sparkle {
+        position: fixed;
+        pointer-events: none;
+        font-size: 1.5em;
+        animation: floatUp 1.5s ease-out forwards;
+        z-index: 10000;
+      }
+      @keyframes floatUp {
+        0% { transform: translateY(0) scale(0.5); opacity: 1; }
+        100% { transform: translateY(-150px) scale(1.2); opacity: 0; }
+      }
+
+      .almost-there {
+        animation: bloom 2s ease-in-out infinite !important;
+      }
+      @keyframes bloom {
+        0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        50% { transform: scale(1.08); text-shadow: 0 0 25px rgba(255,255,255,0.8); }
+      }
+
+      .bg-sparkle {
+        position: fixed;
+        pointer-events: none;
+        opacity: 0.35;
+        z-index: 9998;
+        animation: drift linear infinite;
+      }
+      @keyframes drift {
+        0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+        10% { opacity: 0.35; }
+        90% { opacity: 0.35; }
+        100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+      }
+
+    </style>
+
+    <div
+        data-sap-ui-component
+        data-name="ouradventuremap.map"
+        data-id="container"
+        data-settings='{"id" : "ouradventuremap.map"}'
+        data-handle-validation="true"
+    ></div>
+
+    <script>
+      var REVEAL_DATE = new Date("2026-11-15T00:00:00");
+
+      function updateCountdown() {
+        var now = new Date();
+        var oOverlay = document.getElementById("revealOverlay");
+        var oTitleEl = document.querySelector("#revealOverlay > div:first-child");
+
+        var msUntilReveal = REVEAL_DATE - now;
+        if (msUntilReveal > 0 && msUntilReveal <= 24 * 60 * 60 * 1000) {
+          if (oTitleEl) { oTitleEl.classList.add("almost-there"); }
+        }
+
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("key") === "MadamIvy") {
+          localStorage.setItem("bypassReveal", "true");
+        }
+        var bBypass = localStorage.getItem("bypassReveal") === "true";
+
+        if (bBypass || now >= REVEAL_DATE) {
+          if (oOverlay) { oOverlay.style.display = "none"; }
+          return;
+        }
+
+        var diff = REVEAL_DATE - now;
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        var secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        var oCountdownEl = document.getElementById("revealCountdown");
+        if (oCountdownEl) {
+          oCountdownEl.textContent = days + "d " + hours + "h " + mins + "m " + secs + "s until then";
+          // oCountdownEl.textContent = "After ng CLP mo!";
+        }
+      }
+
+      updateCountdown();
+
+      function spawnBackgroundSparkle() {
+        var oOverlayCheck = document.getElementById("revealOverlay");
+        if (!oOverlayCheck || oOverlayCheck.style.display === "none") { return; }
+
+        var aBgEmojis = ["✨", "💫", "⭐"];
+        var oSparkle = document.createElement("div");
+        oSparkle.className = "bg-sparkle";
+        oSparkle.textContent = aBgEmojis[Math.floor(Math.random() * aBgEmojis.length)];
+        oSparkle.style.left = (Math.random() * 100) + "vw";
+        oSparkle.style.bottom = "-5vh";
+        oSparkle.style.fontSize = (0.8 + Math.random() * 1.2) + "em";
+        oSparkle.style.animationDuration = (6 + Math.random() * 6) + "s";
+
+        document.body.appendChild(oSparkle);
+
+        setTimeout(function () {
+          oSparkle.remove();
+        }, 13000);
+      }
+
+      setInterval(spawnBackgroundSparkle, 800);
+
+      function playTapChime() {
+        try {
+          var oAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          var oOscillator = oAudioCtx.createOscillator();
+          var oGain = oAudioCtx.createGain();
+
+          oOscillator.type = "sine";
+          oOscillator.frequency.setValueAtTime(880, oAudioCtx.currentTime);
+          oOscillator.frequency.exponentialRampToValueAtTime(1320, oAudioCtx.currentTime + 0.15);
+
+          oGain.gain.setValueAtTime(0.15, oAudioCtx.currentTime);
+          oGain.gain.exponentialRampToValueAtTime(0.001, oAudioCtx.currentTime + 0.3);
+
+          oOscillator.connect(oGain);
+          oGain.connect(oAudioCtx.destination);
+
+          oOscillator.start();
+          oOscillator.stop(oAudioCtx.currentTime + 0.3);
+        } catch (e) {}
+      }
+
+      playTapChime();
+
+      var iTypewriterTimer = null;
+      var iRevertTimer = null;
+
+      function typewriteMessage(sText) {
+        var oTapMessageEl = document.getElementById("tapMessage");
+        if (!oTapMessageEl) { return; }
+
+        if (iTypewriterTimer) { clearInterval(iTypewriterTimer); }
+        if (iRevertTimer) { clearTimeout(iRevertTimer); }
+
+        oTapMessageEl.textContent = "";
+        var iIndex = 0;
+
+        iTypewriterTimer = setInterval(function () {
+          oTapMessageEl.textContent += sText.charAt(iIndex);
+          iIndex++;
+          if (iIndex >= sText.length) {
+            clearInterval(iTypewriterTimer);
+            iTypewriterTimer = null;
+
+            iRevertTimer = setTimeout(function () {
+              oTapMessageEl.textContent = "";
+              iRevertTimer = null;
+            }, 500);
+          }
+        }, 40);
+      }
+
+      var aTapMessages = [
+        "Ay. Curious? 👀",
+        "Nope. 😂",
+        "Not yet, Madam. 🤭",
+        "Nice try. HAHAHA",
+        "Pindot ka pa, sure ka? 😂",
+        "Hmmm... secret. 🤫",
+        "Bawal mang-spoil ng sarili. 😌",
+        "Patience, Madam. 😂",
+        "Konting tiis lang...",
+        "You're getting curious, no? 👀",
+        "Aha! Nahuli kita. 😂",
+        "Curious yarn? 🤣",
+        "Sige, tap ka lang. 😂",
+        "Wala pa rin. 😏",
+        "Malapit na... maybe. 👀",
+        "I know you want to know. 😂",
+        "Hindi ko sasabihin. 🤐",
+        "Nice tap. Wrong answer. 😂",
+        "Almost... 🤭",
+        "Okay, calm down. HAHAHA",
+        "Map explore ka muna. 🗺️",
+        "Hoy, patient girl. 😂",
+        "May CLP ka paaaaa. 😌",
+        "Focus ka muna sa CLP, Madam. 😂",
+        "CLP first, surprise later. 😇😂",
+        "One thing at a time. 😌",
+        "Hindi pa ito ang big reveal. 👀",
+        "Baka ma-spoil kita. 🤭",
+        "Shhh... may sikreto dito. 🤫",
+        "Keep tapping at your own risk. 😂",
+        "Curiosity detected. 🚨😂",
+        "Alert: curious Madam detected. 😂",
+        "The map says: WAIT. 🗺️😂",
+        "System says: PATIENCE. 🤖😂",
+        "Access denied. For now. 😏",
+        "Locked. Kasi pasaway ka. 😂",
+        "Sino ba nagsabing pwede na? 🤣",
+        "Malapit na, promise. 🤭",
+        "Worth the wait. I think. 😌",
+        "Okay... you're really curious. 😂",
+        "Fine. I'll give you a hint: WAIT. 🤣",
+        "Hindi kita bibigyan ng clue. 😌",
+        "A little mystery never hurts. 👀",
+        "See youuuuuuuuuuuu........ 🗺️✨",
+        "Your patience will be rewarded. 🤭",
+        "Okay, tama na kakapindot. HAHAHA",
+        "Last tap na talaga... CHARIIIIIIZZZZZ. 😂",
+        "Sige, explore mo lang. 😌",
+        "May surprise. Hindi ngayon. 🤫",
+        "You'll understand soon. ❤️"
+      ];
+      var iTapCount = 0;
+      var oOverlayEl = document.getElementById("revealOverlay");
+
+      if (oOverlayEl) {
+        oOverlayEl.addEventListener("click", function (e) {
+          playTapChime();
+
+          var aGradients = [
+            "linear-gradient(135deg, #FF69B4, #7360F2)",
+            "linear-gradient(135deg, #FF8FB3, #9B6FF2)",
+            "linear-gradient(135deg, #FFB6D9, #B57BF2)",
+            "linear-gradient(135deg, #FFD9E8, #D9A8F2)",
+            "linear-gradient(135deg, #FFE6CC, #F2C94C)"
+          ];
+          oOverlayEl.style.background = aGradients[iTapCount % aGradients.length];
+
+          var oHint = document.getElementById("tapHint");
+          if (oHint) { oHint.style.display = "none"; }
+
+          var aEmojis = ["✨", "💜", "💫", "🌸", "💕"];
+          for (var i = 0; i < 12; i++) {
+            (function () {
+              var oSparkle = document.createElement("div");
+              oSparkle.className = "sparkle";
+              oSparkle.textContent = aEmojis[Math.floor(Math.random() * aEmojis.length)];
+              oSparkle.style.left = (e.clientX + (Math.random() * 100 - 50)) + "px";
+              oSparkle.style.top = (e.clientY + (Math.random() * 40 - 20)) + "px";
+              document.body.appendChild(oSparkle);
+              setTimeout(function () {
+                oSparkle.remove();
+              }, 1500);
+            })();
+          }
+
+          if (iTapCount === 0) {
+            typewriteMessage("I made this because every place we've been means something to me.");
+          } else {
+            typewriteMessage(aTapMessages[iTapCount % aTapMessages.length]);
+          }
+          iTapCount++;
+        });
+      }
+
+      var iLastTrailTime = 0;
+      function spawnTrailHeart(x, y) {
+        var now = Date.now();
+        if (now - iLastTrailTime < 80) { return; }
+        iLastTrailTime = now;
+
+        var oHeart = document.createElement("div");
+        oHeart.className = "sparkle";
+        oHeart.style.fontSize = "1em";
+        oHeart.style.opacity = "0.8";
+        oHeart.textContent = "💜";
+        oHeart.style.left = x + "px";
+        oHeart.style.top = y + "px";
+        document.body.appendChild(oHeart);
+        setTimeout(function () {
+          oHeart.remove();
+        }, 1500);
+      }
+
+      if (oOverlayEl) {
+        oOverlayEl.addEventListener("mousemove", function (e) {
+          spawnTrailHeart(e.clientX, e.clientY);
+        });
+        oOverlayEl.addEventListener("touchmove", function (e) {
+          var oTouch = e.touches[0];
+          if (oTouch) {
+            spawnTrailHeart(oTouch.clientX, oTouch.clientY);
+          }
+        });
+      }
+
+      setInterval(updateCountdown, 1000);
+    </script>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").then(function (registration) {
+            console.log("Service Worker registered:", registration.scope);
+          }).catch(function (error) {
+            console.log("Service Worker registration failed:", error);
+          });
+        });
+      }
+    </script>
+</body>
+</html>
