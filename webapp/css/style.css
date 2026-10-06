@@ -1,0 +1,26 @@
+/* Load Poppins broadly across all sap.m text-bearing controls */
+.sapUiBody,
+.sapMText,
+.sapMLabel,
+.sapMInput,
+.sapMSelect,
+.sapMBtn,
+.sapMDialog,
+.sapMPage {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* Page title and dialog titles = handwritten header font */
+.sapMPageTitle,
+.sapMDialogTitle,
+.sapMTitle {
+  font-family: 'Caveat', cursive !important;
+  font-weight: 700 !important;
+  font-size: 1.6em !important;
+
+/* Viber-purple background */
+html, body, .sapUiBody, .sapMPage, #content, .sapUiGlobalBackgroundColor {
+  background-color: #7360F2 !important;
+}
+  
+}
